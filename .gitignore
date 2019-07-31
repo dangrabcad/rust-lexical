@@ -14,3 +14,7 @@ data/test-float-parse/errors.txt
 /build
 *.pyc
 lexical-core/proptest-regressions/
+
+# Perftools
+perf.data
+perf.data.old

@@ -333,7 +333,7 @@ mod tests {
         let mut buffer = new_buffer();
         for &f in F32_DATA.iter() {
             let s = f32toa_slice(f, &mut buffer);
-            assert_relative_eq!(atof32_slice(s), f, epsilon=1e-6, max_relative=1e-6);
+            assert_relative_eq!(atof32_slice(s).unwrap(), f, epsilon=1e-6, max_relative=1e-6);
         }
     }
 
@@ -346,7 +346,7 @@ mod tests {
                 // The lower accuracy is due to slight rounding errors of
                 // ftoa for the Grisu method with non-10 bases.
                 let s = f32toa_radix_slice(*f, radix, &mut buffer);
-                assert_relative_eq!(atof32_radix_slice(radix, s), *f, max_relative=2e-5);
+                assert_relative_eq!(atof32_radix_slice(radix, s).unwrap(), *f, max_relative=2e-5);
             }
         }
     }
@@ -425,7 +425,7 @@ mod tests {
         let mut buffer = new_buffer();
         for f in F64_DATA.iter() {
             let s = f64toa_slice(*f, &mut buffer);
-            assert_relative_eq!(atof64_slice(s), *f, epsilon=1e-12, max_relative=1e-12);
+            assert_relative_eq!(atof64_slice(s).unwrap(), *f, epsilon=1e-12, max_relative=1e-12);
         }
     }
 
@@ -438,7 +438,7 @@ mod tests {
                 // The lower accuracy is due to slight rounding errors of
                 // ftoa for the Grisu method with non-10 bases.
                 let s = f64toa_radix_slice(*f, radix, &mut buffer);
-                assert_relative_eq!(atof64_radix_slice(radix, s), *f, max_relative=3e-5);
+                assert_relative_eq!(atof64_radix_slice(radix, s).unwrap(), *f, max_relative=3e-5);
             }
         }
     }
@@ -447,12 +447,12 @@ mod tests {
     quickcheck! {
         fn f32_quickcheck(f: f32) -> bool {
             let mut buffer = new_buffer();
-            f == atof32_slice(f32toa_slice(f, &mut buffer))
+            f == atof32_slice(f32toa_slice(f, &mut buffer)).unwrap()
         }
 
         fn f64_quickcheck(f: f64) -> bool {
             let mut buffer = new_buffer();
-            f == atof64_slice(f64toa_slice(f, &mut buffer))
+            f == atof64_slice(f64toa_slice(f, &mut buffer)).unwrap()
         }
     }
 
@@ -461,13 +461,13 @@ mod tests {
         #[test]
         fn f332_proptest(i in f32::MIN..f32::MAX) {
             let mut buffer = new_buffer();
-            i == atof32_slice(f32toa_slice(i, &mut buffer))
+            i == atof32_slice(f32toa_slice(i, &mut buffer)).unwrap()
         }
 
         #[test]
         fn f64_proptest(i in f64::MIN..f64::MAX) {
             let mut buffer = new_buffer();
-            i == atof64_slice(f64toa_slice(i, &mut buffer))
+            i == atof64_slice(f64toa_slice(i, &mut buffer)).unwrap()
         }
     }
 

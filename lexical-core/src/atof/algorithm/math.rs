@@ -34,7 +34,12 @@ use util::*;
 //  requiring software emulation.
 //      sparc64 (`UMUL` only supported double-word arguments).
 cfg_if! {
-if #[cfg(limb_width_64)] {
+if #[cfg(any(
+    target_arch = "aarch64",
+    target_arch = "mips64",
+    target_arch = "powerpc64",
+    target_arch = "x86_64"
+))] {
     pub type Limb = u64;
     type Wide = u128;
     type SignedWide = i128;
@@ -84,28 +89,48 @@ fn split_u32(x: u32) -> [Limb; 1] {
 }
 
 /// Split u64 into limbs, in little-endian order.
-#[cfg(limb_width_32)]
+#[cfg(not(any(
+    target_arch = "aarch64",
+    target_arch = "mips64",
+    target_arch = "powerpc64",
+    target_arch = "x86_64"
+)))]
 #[inline]
 fn split_u64(x: u64) -> [Limb; 2] {
     [as_limb(x), as_limb(x >> 32)]
 }
 
 /// Split u64 into limbs, in little-endian order.
-#[cfg(limb_width_64)]
+#[cfg(any(
+    target_arch = "aarch64",
+    target_arch = "mips64",
+    target_arch = "powerpc64",
+    target_arch = "x86_64"
+))]
 #[inline]
 fn split_u64(x: u64) -> [Limb; 1] {
     [as_limb(x)]
 }
 
 /// Split u128 into limbs, in little-endian order.
-#[cfg(all(has_i128, limb_width_32))]
+#[cfg(not(any(
+    target_arch = "aarch64",
+    target_arch = "mips64",
+    target_arch = "powerpc64",
+    target_arch = "x86_64"
+)))]
 #[inline]
 fn split_u128(x: u128) -> [Limb; 4] {
     [as_limb(x), as_limb(x >> 32), as_limb(x >> 64), as_limb(x >> 96)]
 }
 
 /// Split u128 into limbs, in little-endian order.
-#[cfg(all(has_i128, limb_width_64))]
+#[cfg(any(
+    target_arch = "aarch64",
+    target_arch = "mips64",
+    target_arch = "powerpc64",
+    target_arch = "x86_64"
+))]
 #[inline]
 fn split_u128(x: u128) -> [Limb; 2] {
     [as_limb(x), as_limb(x >> 64)]
@@ -185,6 +210,7 @@ trait Hi16<T>: SliceLike<T> {
     fn hi16_2(&self) -> (u16, bool);
 
     /// High-level exporter to extract the high 16 bits from a little-endian slice.
+    #[inline]
     fn hi16(&self) -> (u16, bool) {
         match self.len() {
             0 => (0, false),
@@ -304,6 +330,7 @@ trait Hi32<T>: SliceLike<T> {
     fn hi32_3(&self) -> (u32, bool);
 
     /// High-level exporter to extract the high 32 bits from a little-endian slice.
+    #[inline]
     fn hi32(&self) -> (u32, bool) {
         match self.len() {
             0 => (0, false),
@@ -435,6 +462,7 @@ trait Hi64<T>: SliceLike<T> {
     fn hi64_5(&self) -> (u64, bool);
 
     /// High-level exporter to extract the high 64 bits from a little-endian slice.
+    #[inline]
     fn hi64(&self) -> (u64, bool) {
         match self.len() {
             0 => (0, false),
@@ -578,7 +606,6 @@ impl Hi64<u64> for [u64] {
 // HI128
 
 /// Shift 128-bit integer to high 128-bits.
-#[cfg(has_i128)]
 #[inline]
 fn u128_to_hi128_1(r0: u128) -> (u128, bool) {
     let ls = r0.leading_zeros();
@@ -586,7 +613,6 @@ fn u128_to_hi128_1(r0: u128) -> (u128, bool) {
 }
 
 /// Shift 2 128-bit integers to high 128-bits.
-#[cfg(has_i128)]
 #[inline]
 fn u128_to_hi128_2(r0: u128, r1: u128) -> (u128, bool) {
     let ls = r0.leading_zeros();
@@ -597,7 +623,6 @@ fn u128_to_hi128_2(r0: u128, r1: u128) -> (u128, bool) {
 }
 
 /// Trait to export the high 128-bits from a little-endian slice.
-#[cfg(has_i128)]
 trait Hi128<T>: SliceLike<T> {
     /// Get the hi128 bits from a 1-limb slice.
     fn hi128_1(&self) -> (u128, bool);
@@ -627,6 +652,7 @@ trait Hi128<T>: SliceLike<T> {
     fn hi128_9(&self) -> (u128, bool);
 
     /// High-level exporter to extract the high 128 bits from a little-endian slice.
+    #[inline]
     fn hi128(&self) -> (u128, bool) {
         match self.len() {
             0 => (0, false),
@@ -642,7 +668,6 @@ trait Hi128<T>: SliceLike<T> {
     }
 }
 
-#[cfg(has_i128)]
 impl Hi128<u16> for [u16] {
     #[inline]
     fn hi128_1(&self) -> (u128, bool) {
@@ -754,7 +779,6 @@ impl Hi128<u16> for [u16] {
     }
 }
 
-#[cfg(has_i128)]
 impl Hi128<u32> for [u32] {
     #[inline]
     fn hi128_1(&self) -> (u128, bool) {
@@ -828,7 +852,6 @@ impl Hi128<u32> for [u32] {
     }
 }
 
-#[cfg(has_i128)]
 impl Hi128<u64> for [u64] {
     #[inline]
     fn hi128_1(&self) -> (u128, bool) {
@@ -1167,7 +1190,6 @@ pub fn ishr<T>(x: &mut T, n: usize)
 }
 
 /// Shift-left buffer by n bits.
-#[inline]
 pub fn shr<T>(x: &[Limb], n: usize)
     -> (T, bool)
     where T: CloneableVecLike<Limb>
@@ -1244,7 +1266,6 @@ pub fn ishl_limbs<T>(x: &mut T, n: usize)
 }
 
 /// Shift-left buffer by n bits.
-#[inline]
 pub fn ishl<T>(x: &mut T, n: usize)
     where T: CloneableVecLike<Limb>
 {
@@ -1260,7 +1281,6 @@ pub fn ishl<T>(x: &mut T, n: usize)
 }
 
 /// Shift-left buffer by n bits.
-#[inline]
 pub fn shl<T>(x: &[Limb], n: usize)
     -> T
     where T: CloneableVecLike<Limb>
@@ -1497,7 +1517,6 @@ pub fn imul_power<T>(x: &mut T, radix: u32, n: u32)
 }
 
 /// Mul by a power.
-#[inline]
 pub fn mul_power<T>(x: &[Limb], radix: u32, n: u32)
     -> T
     where T: CloneableVecLike<Limb>
@@ -1526,7 +1545,6 @@ pub fn idiv<T>(x: &mut T, y: Limb)
 }
 
 /// Div small integer to bigint and get the remainder.
-#[inline]
 pub fn div<T>(x: &[Limb], y: Limb)
     -> (T, Limb)
     where T: CloneableVecLike<Limb>
@@ -1570,7 +1588,6 @@ pub fn ipow<T>(x: &mut T, mut n: Limb)
 }
 
 /// Calculate x^n, using exponentiation by squaring.
-#[inline]
 pub fn pow<T>(x: &[Limb], n: Limb)
     -> T
     where T: CloneableVecLike<Limb>
@@ -1596,7 +1613,6 @@ use super::*;
 // RELATIVE OPERATORS
 
 /// Compare `x` to `y`, in little-endian order.
-#[inline]
 pub fn compare(x: &[Limb], y: &[Limb]) -> cmp::Ordering {
     if x.len() > y.len() {
         return cmp::Ordering::Greater;
@@ -1643,7 +1659,6 @@ pub fn less_equal(x: &[Limb], y: &[Limb]) -> bool {
 /// Check if x is equal to y.
 /// Slightly optimized for equality comparisons, since it reduces the number
 /// of comparisons relative to `compare`.
-#[inline]
 pub fn equal(x: &[Limb], y: &[Limb]) -> bool {
     let mut iter = x.iter().rev().zip(y.iter().rev());
     x.len() == y.len() && iter.all(|(&xi, &yi)| xi == yi)
@@ -1693,7 +1708,6 @@ pub fn iadd<T>(x: &mut T, y: &[Limb])
 }
 
 /// Add bigint to bigint.
-#[inline]
 pub fn add<T>(x: &[Limb], y: &[Limb])
     -> T
     where T: CloneableVecLike<Limb>
@@ -1734,7 +1748,6 @@ pub fn isub<T>(x: &mut T, y: &[Limb])
 }
 
 /// Sub bigint to bigint.
-#[inline]
 pub fn sub<T>(x: &[Limb], y: &[Limb])
     -> T
     where T: CloneableVecLike<Limb>
@@ -1873,7 +1886,6 @@ fn karatsuba_mul_fwd<T>(x: &[Limb], y: &[Limb])
 }
 
 /// MulAssign bigint to bigint.
-#[inline]
 pub fn imul<T>(x: &mut T, y: &[Limb])
     where T: CloneableVecLike<Limb>
 {
@@ -1889,7 +1901,6 @@ pub fn imul<T>(x: &mut T, y: &[Limb])
 }
 
 /// Mul bigint to bigint.
-#[inline]
 pub fn mul<T>(x: &[Limb], y: &[Limb])
     -> T
     where T: CloneableVecLike<Limb>
@@ -1912,7 +1923,6 @@ const ALGORITHM_D_M: Wide = ALGORITHM_D_B - 1;
 /// Assumes `x.len() > y.len()` and `y.len() >= 2`.
 ///
 /// * `j`   - Current index on the iteration of the loop.
-#[inline]
 fn calculate_qhat(x: &[Limb], y: &[Limb], j: usize)
     -> Wide
 {
@@ -1956,7 +1966,6 @@ fn calculate_qhat(x: &[Limb], y: &[Limb], j: usize)
 ///
 /// This is step D4 in Algorithm D in "The Art of Computer Programming",
 /// and returns the remainder.
-#[inline]
 fn multiply_and_subtract<T>(x: &mut T, y: &T, qhat: Wide, j: usize)
     -> SignedWide
     where T: CloneableVecLike<Limb>
@@ -2014,7 +2023,6 @@ fn test_quotient(qhat: Wide, t: SignedWide)
 ///
 /// This step should be specifically debugged, due to its low likelihood,
 /// since the probability is ~2/b, where b in this case is 2^32 or 2^64.
-#[inline]
 fn add_back<T>(x: &mut T, y: &T, mut t: SignedWide, j: usize)
     where T: CloneableVecLike<Limb>
 {
@@ -2050,7 +2058,6 @@ fn add_back<T>(x: &mut T, y: &T, mut t: SignedWide, j: usize)
 ///
 /// This is step D8 in Algorithm D in "The Art of Computer Programming",
 /// and "unnormalizes" to calculate the remainder from the quotient.
-#[inline]
 fn calculate_remainder<T>(x: &[Limb], y: &[Limb], s: usize)
     -> T
     where T: CloneableVecLike<Limb>
@@ -2151,7 +2158,6 @@ pub fn idiv<T>(x: &mut T, y: &[Limb])
 }
 
 /// Div bigint to bigint.
-#[inline]
 pub fn div<T>(x: &[Limb], y: &[Limb])
     -> (T, T)
     where T: CloneableVecLike<Limb>
@@ -2371,7 +2377,6 @@ pub(in atof::algorithm) trait SharedOps: Clone + Sized + Default {
     }
 
     /// Get the high 128-bits from the bigint and if there are remaining bits.
-    #[cfg(has_i128)]
     #[inline]
     fn hi128(&self) -> (u128, bool) {
         self.data().as_slice().hi128()
@@ -2419,7 +2424,6 @@ pub(in atof::algorithm) trait SharedOps: Clone + Sized + Default {
     }
 
     /// Create new big integer from u128.
-    #[cfg(has_i128)]
     #[inline]
     fn from_u128(x: u128) -> Self {
         let mut v = Self::default();

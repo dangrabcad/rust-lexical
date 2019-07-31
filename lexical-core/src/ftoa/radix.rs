@@ -9,6 +9,11 @@ use util::*;
 // FTOA BASEN
 // ----------
 
+// Export a character to digit.
+macro_rules! to_digit {
+    ($c:expr, $radix:ident) => (($c as char).to_digit($radix));
+}
+
 /// Calculate the naive exponent from a minimal value.
 ///
 /// Don't export this for float, since it's specialized for radix.
@@ -106,8 +111,7 @@ fn ftoa_naive<'a>(value: f64, radix: u32, bytes: &'a mut [u8])
                         }
                         // Reconstruct digit.
                         let c = buffer[fraction_cursor];
-                        let digit = char_to_digit(c) as i32;
-                        if digit <= radix as i32 {
+                        if let Some(digit) = to_digit!(c, radix) {
                             let idx = (digit + 1) as usize;
                             buffer[fraction_cursor] = digit_to_char(idx);
                             fraction_cursor += 1;
